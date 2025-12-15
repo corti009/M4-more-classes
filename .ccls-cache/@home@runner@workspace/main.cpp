@@ -1,181 +1,373 @@
-#include <iostream>
-#include <string>
-#include <iomanip>
 #include <cmath>
-#include <random>
-#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <string>
 
-class Car {
+using namespace std;
+
+const int DEFAULT_MONTH = 1;
+const int DEFAULT_DAY = 1;
+const int DEFAULT_YEAR = 1900;
+
+class Date {
 private:
-    std::string make;
-    std::string model;
-    std::string color;
-    std::string licensePlate;
+  int month;
+  int day;
+  int year;
+
+  void resetToDefault();
+  bool isLeapYear(int y) const;
+  int lastDay(int m, int y) const;
+  std::string getMonthName(int m) const;
+
+  void incrementDate();
+  void decrementDate();
+
+  long toDays() const;
 
 public:
-   
-    Car(std::string mk, std::string md, std::string clr, std::string lp)
-        : make(mk), model(md), color(clr), licensePlate(lp) {}
+  Date(int m = DEFAULT_MONTH, int d = DEFAULT_DAY, int y = DEFAULT_YEAR);
 
-    std::string getMake() const { return make; }
-    std::string getModel() const { return model; }
-    std::string getColor() const { return color; }
-    std::string getLicensePlate() const { return licensePlate; }
+  void setDate(int m, int d, int y);
+  int getMonth() const { return month; }
+  int getDay() const { return day; }
+  int getYear() const { return year; }
 
-    void setMake(const std::string& mk) { make = mk; }
-    void setModel(const std::string& md) { model = md; }
-    void setColor(const std::string& clr) { color = clr; }
-    void setLicensePlate(const std::string& lp) { licensePlate = lp; }
+  std::string printFormat1() const;
+  std::string printFormat2() const;
+  std::string printFormat3() const;
+
+  Date &operator++();
+
+  Date operator++(int);
+
+  Date &operator--();
+
+  Date operator--(int);
+
+  long operator-(const Date &other) const;
+
+  friend ostream &operator<<(ostream &os, const Date &d);
+  friend istream &operator>>(istream &is, Date &d);
 };
 
-class ParkingMeter {
-private:
-    double timePurchased; 
-    double ratePerMinute; 
 
-public:
+void Date::resetToDefault() {
+  month = DEFAULT_MONTH;
+  day = DEFAULT_DAY;
+  year = DEFAULT_YEAR;
+}
 
-    ParkingMeter(double time, double rate)
-        : timePurchased(time), ratePerMinute(rate) {}
+bool Date::isLeapYear(int y) const {
+  if (y < 1)
+    return false;
+  return (y % 400 == 0) || (y % 4 == 0 && y % 100 != 0);
+}
 
-    double getTimePurchased() const { return timePurchased; }
-    double getRatePerMinute() const { return ratePerMinute; }
+int Date::lastDay(int m, int y) const {
+  if (m == 1 || m == 3 || m == 5 || m == 7 || m == 8 || m == 10 || m == 12) {
+    return 31;
+  } else if (m == 4 || m == 6 || m == 9 || m == 11) {
+    return 30;
+  } else if (m == 2) {
+    return isLeapYear(y) ? 29 : 28;
+  }
+  return 0; 
+}
 
-    void setTimePurchased(double time) { timePurchased = time; }
-    void setRatePerMinute(double rate) { ratePerMinute = rate; }
-    void purchaseTime(double minutes) {
-        timePurchased += minutes;
-        std::cout << "[Meter] Driver purchased an additional " << minutes << " minutes.\n";
-    }
-};
-
-class ParkingTicket {
-private:
-    double fineAmount;
-    std::string licensePlate;
-    double timeIn;  
-    double timeOut; 
-
-public:
-    
-    ParkingTicket(double fine, std::string lp, double ti, double to)
-        : fineAmount(fine), licensePlate(lp), timeIn(ti), timeOut(to) {}
-
-    
-    double getFineAmount() const { return fineAmount; }
-    std::string getLicensePlate() const { return licensePlate; }
-    double getTimeIn() const { return timeIn; }
-    double getTimeOut() const { return timeOut; }
-
-    void setFineAmount(double fine) { fineAmount = fine; }
-    void setLicensePlate(const std::string& lp) { licensePlate = lp; }
-    void setTimeIn(double ti) { timeIn = ti; }
-    void setTimeOut(double to) { timeOut = to; }
-};
-
-class PoliceOfficer {
-private:
-    std::string officerName;
-    int badgeNumber;
-
-public:
-
-    PoliceOfficer(std::string name, int badge)
-        : officerName(name), badgeNumber(badge) {}
-
-  
-    std::string getOfficerName() const { return officerName; }
-    int getBadgeNumber() const { return badgeNumber; }
+std::string Date::getMonthName(int m) const {
+  switch (m) {
+  case 1:
+    return "January";
+  case 2:
+    return "February";
+  case 3:
+    return "March";
+  case 4:
+    return "April";
+  case 5:
+    return "May";
+  case 6:
+    return "June";
+  case 7:
+    return "July";
+  case 8:
+    return "August";
+  case 9:
+    return "September";
+  case 10:
+    return "October";
+  case 11:
+    return "November";
+  case 12:
+    return "December";
+  default:
+    return "Invalid Month";
+  }
+}
 
 
-    void setOfficerName(const std::string& name) { officerName = name; }
-    void setBadgeNumber(int badge) { badgeNumber = badge; }
+long Date::toDays() const {
+  long days = 0;
 
-   
-    bool checkCar(const ParkingMeter& meter, double minutesParked) const {
-        double timePurchased = meter.getTimePurchased();
-        return minutesParked > timePurchased;
-    }
+  for (int y = DEFAULT_YEAR; y < year; ++y) {
+    days += isLeapYear(y) ? 366 : 365;
+  }
 
-   
-    ParkingTicket* issueTicket(const Car& car, const ParkingMeter& meter, double minutesParked) const {
-        if (!checkCar(meter, minutesParked)) {
-            return nullptr; 
-        }
+  const int daysInMonth[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-        double timePurchased = meter.getTimePurchased();
-        double minutesOverdue = minutesParked - timePurchased;
-        double fine = 25.00;
-        double overdueHours = minutesOverdue / 60.0;
-        if (overdueHours > 1.0) {
-            int additionalHours = static_cast<int>(std::ceil(overdueHours - 1.0));
-            fine += (additionalHours * 10.00);
-        }
-
-        std::cout << "\n*** VIOLATION DETECTED ***\n";
-        std::cout << "Car was overdue by " << std::fixed << std::setprecision(2) << minutesOverdue << " minutes.\n";
-        std::cout << "Fine calculated: $" << fine << "\n";
-
-        return new ParkingTicket(
-            fine, 
-            car.getLicensePlate(), 
-            timePurchased, 
-            minutesParked
-        );
-    }
-};
-
-void runSimulation(const Car& car, const ParkingMeter& meter, const PoliceOfficer& officer, double minutesParked) {
-    std::cout << "\n======================================================\n";
-    std::cout << "SIMULATION SCENARIO\n";
-    std::cout << "======================================================\n";
-    std::cout << "  Vehicle: " << car.getMake() << " " << car.getModel() << " (" << car.getColor() << ")\n";
-    std::cout << "  License: " << car.getLicensePlate() << "\n";
-    std::cout << "  Paid Time: " << meter.getTimePurchased() << " minutes\n";
-    std::cout << "  Time Parked: " << minutesParked << " minutes\n";
-    std::cout << "  Officer: " << officer.getOfficerName() << " (Badge #" << officer.getBadgeNumber() << ")\n";
-    std::cout << "------------------------------------------------------\n";
-
-    ParkingTicket* ticket = officer.issueTicket(car, meter, minutesParked);
-
-    if (ticket) {
-        std::cout << "\n[TICKET ISSUED]\n";
-        std::cout << "  License Plate: " << ticket->getLicensePlate() << "\n";
-        std::cout << "  Violation Duration: " << ticket->getTimeOut() - ticket->getTimeIn() << " minutes\n";
-        std::cout << "  Total Fine: $" << std::fixed << std::setprecision(2) << ticket->getFineAmount() << "\n";
-        delete ticket; 
+  for (int m = 1; m < month; ++m) {
+    if (m == 2 && isLeapYear(year)) {
+      days += 29;
     } else {
-        std::cout << "\n[NO VIOLATION]\n";
-        std::cout << "The vehicle was legally parked.\n";
+      days += daysInMonth[m];
     }
-    std::cout << "======================================================\n";
+  }
+
+  days += day - 1;
+
+  return days;
+}
+
+
+void Date::incrementDate() {
+  day++;
+  int maxDay = lastDay(month, year);
+
+  if (day > maxDay) {
+    day = 1;
+    month++;
+
+    
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+}
+
+void Date::decrementDate() {
+  day--;
+
+  if (day < 1) {
+    month--;
+
+    if (month < 1) {
+      month = 12;
+      year--;
+    }
+    day = lastDay(month, year);
+  }
+}
+
+Date::Date(int m, int d, int y) {
+  resetToDefault();
+  setDate(m, d, y);
+}
+
+void Date::setDate(int m, int d, int y) {
+  
+  if (m < 1 || m > 12) {
+    cout << "Error: Month invalid (" << m
+         << "). Setting date to default 1/1/1900.\n";
+    resetToDefault();
+    return;
+  }
+
+  if (y < 1) {
+    cout << "Error: Year invalid (" << y
+         << "). Setting date to default 1/1/1900.\n";
+    resetToDefault();
+    return;
+  }
+
+  int maxDay = lastDay(m, y);
+
+  if (d < 1 || d > maxDay) {
+    cout << "Error: Day invalid (" << d << "). Day must be 1-" << maxDay
+         << " for " << getMonthName(m) << " " << y
+         << ". Setting date to default 1/1/1900.\n";
+    resetToDefault();
+    return;
+  }
+
+  month = m;
+  day = d;
+  year = y;
+}
+
+Date &Date::operator++() {
+  incrementDate();
+  return *this;
+}
+
+Date Date::operator++(int) {
+  Date temp = *this;
+  incrementDate();   
+  return temp;       
+}
+
+Date &Date::operator--() {
+  decrementDate();
+  return *this;
+}
+
+
+Date Date::operator--(int) {
+  Date temp = *this; 
+  decrementDate();   
+  return temp;      
+}
+
+
+long Date::operator-(const Date &other) const {
+ 
+  return std::abs(this->toDays() - other.toDays());
+}
+ostream &operator<<(ostream &os, const Date &d) {
+  
+  os << d.printFormat2();
+  return os;
+}
+
+istream &operator>>(istream &is, Date &d) {
+  int m, day, y;
+
+  cout << "\nEnter Date (Format M D Y, e.g., 5 15 2025): ";
+
+  if (!(is >> m >> day >> y)) {
+   
+    is.clear();
+    is.ignore(numeric_limits<streamsize>::max(), '\n');
+    cout << "Invalid input format detected. Date set to default.\n";
+    d.resetToDefault();
+  } else {
+    
+    d.setDate(m, day, y);
+  }
+  return is;
+}
+
+std::string Date::printFormat1() const {
+  stringstream ss;
+  ss << month << "/" << day << "/" << year;
+  return ss.str();
+}
+
+std::string Date::printFormat2() const {
+  stringstream ss;
+  ss << getMonthName(month) << " " << day << ", " << year;
+  return ss.str();
+}
+
+std::string Date::printFormat3() const {
+  stringstream ss;
+  ss << day << " " << getMonthName(month) << " " << year;
+  return ss.str();
+}
+
+void runTests() {
+  cout << "========================================================\n";
+  cout << "           Date Class Operator Overload Tests\n";
+  cout << "========================================================\n\n";
+
+  Date d1, d2; 
+  cout << "--- Test 1: Default Constructor (d1) ---\n";
+  d1 = Date();
+  cout << "Result (Format 1): " << d1.printFormat1() << endl;
+  cout << "Expected: 1/1/1900\n\n";
+  cout << "--- Test 2: Parameterized Constructor (d2) ---\n";
+  d2 = Date(5, 15, 2025);
+  cout << "Result (Format 2): " << d2.printFormat2() << endl;
+  cout << "Expected: May 15, 2025\n\n";
+  cout << "--- Test 3: setDate() with Valid Date ---\n";
+  d1.setDate(10, 20, 2023);
+  cout << "Result (10/20/2023, Format 3): " << d1.printFormat3() << endl;
+  cout << "Expected: 20 October 2023\n\n";
+  cout << "--- Test 4: setDate() with Invalid Month/Day (13/45/2018) ---\n";
+  d1.setDate(13, 45, 2018); 
+  cout << "Result: " << d1.printFormat1() << endl;
+  cout << "Expected: 1/1/1900\n\n";
+  cout << "--- Test 5: setDate() with Invalid Day for Month (4/31/2000) ---\n";
+  d1.setDate(4, 31, 2000); 
+  cout << "Result: " << d1.printFormat1() << endl;
+  cout << "Expected: 1/1/1900\n\n";
+    
+  cout << "--- Test 6: setDate() with Invalid Leap Day (2/29/2009) ---\n";
+  d1.setDate(2, 29, 2009); 
+  cout << "Result: " << d1.printFormat1() << endl;
+  cout << "Expected: 1/1/1900\n\n";
+
+  cout << "--- Test 7: Subtraction Operator (-) Same Month (4/18/2014 - "
+          "4/10/2014) ---\n";
+  d1.setDate(4, 10, 2014); 
+  d2.setDate(4, 18, 2014); 
+  cout << "Difference: " << d2 - d1 << " days" << endl;
+  cout << "Expected: 8 days\n\n";
+
+  cout << "--- Test 8: Subtraction Operator (-) Across Years (2/2/2006 - "
+          "11/10/2003) ---\n";
+  d1.setDate(2, 2, 2006);
+  d2.setDate(11, 10, 2003);
+  cout << "Difference: " << d1 - d2 << " days" << endl;
+  cout << "Expected: 815 days\n\n";
+
+  cout << "--- Test 9: Prefix ++ and -- (Leap Year Rollover) ---\n";
+  d1.setDate(2, 29, 2008);
+  cout << "Initial (2/29/2008): " << d1.printFormat1() << endl;
+  ++d1;
+  cout << "After ++d1: " << d1.printFormat1() << " (Expected: 3/1/2008)"
+       << endl;
+  --d1;
+  cout << "After --d1: " << d1.printFormat1() << " (Expected: 2/29/2008)\n\n";
+
+  cout << "--- Test 10: Postfix ++ and -- (Leap Year Rollover) ---\n";
+  d1.setDate(2, 29, 2008);
+  cout << "Initial (2/29/2008): " << d1.printFormat1() << endl;
+  d1++; 
+  cout << "After d1++: " << d1.printFormat1() << " (Expected: 3/1/2008)"
+       << endl;
+  d1--; 
+  cout << "After d1-- (Actual state): " << d1.printFormat1()
+       << " (Expected: 2/29/2008)\n\n";
+
+  cout << "--- Test 11: Postfix ++ and -- (Year Rollover) ---\n";
+  d1.setDate(12, 31, 2024);
+  cout << "Initial (12/31/2024): " << d1.printFormat1() << endl;
+  d1++; 
+  cout << "After d1++: " << d1.printFormat1() << " (Expected: 1/1/2025)"
+       << endl;
+  d1--; 
+  cout << "After d1-- (Actual state): " << d1.printFormat1()
+       << " (Expected: 12/31/2024)\n\n";
+    
+  cout << "--- Test 12: Prefix ++ and -- (Year Rollover) ---\n";
+  d1.setDate(12, 31, 2024);
+  cout << "Initial (12/31/2024): " << d1.printFormat1() << endl;
+  ++d1;
+  cout << "After ++d1: " << d1.printFormat1() << " (Expected: 1/1/2025)"
+       << endl;
+  --d1;
+  cout << "After --d1: " << d1.printFormat1() << " (Expected: 12/31/2024)\n\n";
+
+  cout << "--- Test 13: Stream Extraction Operator (cin >> d1) ---\n";
+ 
+  cin >> d1;
+
+  cout << "\n--- Test 14: Stream Insertion Operator (cout << d1) ---\n";
+  cout << "Displaying entered date: " << d1 << endl;
+  cout << "Expected Format: Month DD, YYYY (e.g., April 18, 2018)\n\n";
+
+  cout << "========================================================\n";
+  cout << "Test program finished.\n";
 }
 
 int main() {
-   
-    PoliceOfficer officer("Agent Smith", 4201);
-    Car parkedCar("Honda", "Civic", "Red", "XYZ-456");
+  
+  cout << fixed << setprecision(0);
 
-    
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::mt19937 generator(seed);
-
-   
-    std::uniform_real_distribution<> purchasedTimeDist(30.0, 180.0);
-    double purchasedTime = std::round(purchasedTimeDist(generator));
-
-    ParkingMeter meter(purchasedTime, 0.01); 
-    double parkedTimeA = purchasedTime - 15.0; 
-    std::cout << "--- Running Test Case A: No Violation ---\n";
-    runSimulation(parkedCar, meter, officer, parkedTimeA);
-
-    double parkedTimeB = purchasedTime + 45.0;
-    std::cout << "\n--- Running Test Case B: Minor Violation (< 1 hour overdue) ---\n";
-    runSimulation(parkedCar, meter, officer, parkedTimeB);
-
-    double parkedTimeC = purchasedTime + 150.0; 
-    std::cout << "\n--- Running Test Case C: Major Violation (> 2 hours overdue) ---\n";
-    runSimulation(parkedCar, meter, officer, parkedTimeC);
-
-    return 0;
+  runTests();
+  return 0;
 }
